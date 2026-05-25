@@ -1,0 +1,51 @@
+server:
+  port: 8081
+
+spring:
+  
+  name : backend
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: your_mysql_password   # ← change this
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update          # auto-creates/updates tables from entities
+    show-sql: true              # prints SQL queries in console (helpful while learning)
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+  
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: lucicore0001@gmail.com       # ← change this
+    password: mfegrltvdiymdbei    # ← NOT your login password, see note below
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 621219264901-b5d2nmm2vv0esjg1p98ep4upl8eal6j7.apps.googleusercontent.com         # ← Phase 4 will fill this
+            client-secret: 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  # ← Phase 4 will fill this
+            scope:
+              - email
+              - profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+application:
+  jwt:
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970   # 256-bit hex key
+    expiration: 86400000    # 24 hours in milliseconds
+  frontend-url: http://localhost:5173
