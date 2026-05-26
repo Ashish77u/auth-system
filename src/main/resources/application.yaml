@@ -2,13 +2,16 @@ server:
   port: 8081
 
 spring:
+  main:
+#    allow-bean-definition-overriding: true   # ← add this
+  
   
   name : backend
   
   datasource:
     url: jdbc:mysql://localhost:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: your_mysql_password   # ← change this
+    password: '@shish_407'   # ← change this
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
