@@ -12,6 +12,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -21,6 +22,8 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
+    private final CorsConfigurationSource corsConfigurationSource;  // ← add this
+
 
     private static final String[] PUBLIC_URLS = {
             "/api/auth/**",
@@ -31,27 +34,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF — we use JWT (stateless), not sessions/cookies
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))  // ← add this
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // Which endpoints are public vs protected
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .anyRequest().authenticated()
                 )
-
-                // STATELESS — no session created or used (JWT handles state)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // Use our custom auth provider (DaoAuthenticationProvider)
                 .authenticationProvider(authenticationProvider)
-
-                // Run our JWT filter BEFORE Spring's default username/password filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+
     }
 }
 

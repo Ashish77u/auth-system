@@ -3,7 +3,7 @@ server:
 
 spring:
   main:
-#    allow-bean-definition-overriding: true   # ← add this
+    allow-bean-definition-overriding: true   # ← add this
   
   
   name : backend
@@ -34,6 +34,9 @@ spring:
           auth: true
           starttls:
             enable: true
+            required: true
+        debug: false
+
   
   security:
     oauth2:
