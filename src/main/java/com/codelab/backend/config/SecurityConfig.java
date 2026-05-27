@@ -1,5 +1,6 @@
 package com.codelab.backend.config;
 
+import com.codelab.backend.service.CustomOAuth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -24,6 +25,11 @@ public class SecurityConfig {
     private final AuthenticationProvider authenticationProvider;
     private final CorsConfigurationSource corsConfigurationSource;  // ← add this
 
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2FailureHandler;
+    private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthRequestRepository;
+
 
     private static final String[] PUBLIC_URLS = {
             "/api/auth/**",
@@ -44,7 +50,25 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+        // ── OAuth2 config ──────────────────────────────────────────
+            .oauth2Login(oauth2 -> oauth2
+
+                // Where the OAuth2 request state is stored (our cookie)
+                .authorizationEndpoint(endpoint -> endpoint
+                        .authorizationRequestRepository(cookieAuthRequestRepository)
+                )
+
+                // Which service processes the returned user info
+                .userInfoEndpoint(userInfo -> userInfo
+                        .userService(customOAuth2UserService)
+                )
+
+                // What happens on success / failure
+                .successHandler(oAuth2SuccessHandler)
+                .failureHandler(oAuth2FailureHandler)
+        );
 
         return http.build();
 

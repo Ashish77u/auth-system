@@ -43,8 +43,10 @@ spring:
       client:
         registration:
           google:
-            client-id: 621219264901-b5d2nmm2vv0esjg1p98ep4upl8eal6j7.apps.googleusercontent.com         # ← Phase 4 will fill this
-            client-secret: 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  # ← Phase 4 will fill this
+#            client-id: 621219264901-b5d2nmm2vv0esjg1p98ep4upl8eal6j7.apps.googleusercontent.com         # ← Phase 4 will fill this
+            client-id: ${OAUTH_CLIENT_ID}         # ← Phase 4 will fill this
+            client-secret: ${OAUTH_CLIENT_SECRET}  # ← Phase 4 will fill this
+#            client-secret: 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  # ← Phase 4 will fill this
             scope:
               - email
               - profile
@@ -55,3 +57,6 @@ application:
     secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970   # 256-bit hex key
     expiration: 86400000    # 24 hours in milliseconds
   frontend-url: http://localhost:5173
+  oauth2:
+    authorized-redirect-uri: http://localhost:5173/oauth2/callback
+    cookie-expire-seconds: 180

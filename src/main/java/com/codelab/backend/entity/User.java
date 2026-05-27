@@ -10,10 +10,12 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "users")
@@ -21,7 +23,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User implements UserDetails {
+public class User implements UserDetails, OAuth2User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,6 +53,10 @@ public class User implements UserDetails {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // Stores Google's attributes temporarily — NOT persisted to DB
+    @Transient                                                     // ← new
+    private Map<String, Object> attributes;                        // ← new
 
     @PrePersist
     protected void onCreate() {
@@ -87,6 +93,19 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return enabled;  // Spring Security checks this — unverified users can't log in
     }
+
+        // ── OAuth2User methods ───────────────────────────────────────
+
+        @Override
+        public Map<String, Object> getAttributes() {                   // ← new
+            return attributes != null ? attributes : Map.of();
+        }
+
+        @Override
+        public String getName() {                                      // ← new
+            return email;
+        }
+
 }
 
 
