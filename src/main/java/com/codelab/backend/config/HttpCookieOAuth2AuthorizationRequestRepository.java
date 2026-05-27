@@ -68,7 +68,6 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
     private String serialize(OAuth2AuthorizationRequest request) {
         try {
-            // Build a simple key=value string with the fields Spring needs
             StringBuilder sb = new StringBuilder();
             sb.append("authorizationUri=")
                     .append(encode(request.getAuthorizationUri())).append("|");
@@ -79,9 +78,19 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
             sb.append("state=")
                     .append(encode(request.getState())).append("|");
             sb.append("scopes=")
-                    .append(encode(String.join(",", request.getScopes())));
+                    .append(encode(String.join(",", request.getScopes()))).append("|");
 
-            // Additional params (code_challenge etc.)
+            // ← was missing — Spring needs this to look up the client registration
+            sb.append("registrationId=")
+                    .append(encode(request.getAttribute(
+                            org.springframework.security.oauth2.core.endpoint
+                                    .OAuth2ParameterNames.REGISTRATION_ID) != null
+                            ? (String) request.getAttribute(
+                            org.springframework.security.oauth2.core.endpoint
+                                    .OAuth2ParameterNames.REGISTRATION_ID)
+                            : "google"
+                    ));
+
             if (request.getAdditionalParameters() != null &&
                     !request.getAdditionalParameters().isEmpty()) {
                 StringBuilder params = new StringBuilder();
@@ -100,6 +109,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
         }
     }
 
+
     private OAuth2AuthorizationRequest deserialize(String value) {
         try {
             String decoded = new String(Base64.getUrlDecoder().decode(value));
@@ -113,7 +123,6 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
                 }
             }
 
-            // Rebuild the OAuth2AuthorizationRequest from stored fields
             OAuth2AuthorizationRequest.Builder builder =
                     OAuth2AuthorizationRequest.authorizationCode()
                             .authorizationUri(fields.get("authorizationUri"))
@@ -123,7 +132,14 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
                             .scopes(java.util.Set.of(
                                     fields.get("scopes").split(",")));
 
-            // Restore additional parameters if present
+            // ← restore registrationId as an attribute
+            String registrationId = fields.getOrDefault("registrationId", "google");
+            builder.attributes(attrs -> attrs.put(
+                    org.springframework.security.oauth2.core.endpoint
+                            .OAuth2ParameterNames.REGISTRATION_ID,
+                    registrationId
+            ));
+
             if (fields.containsKey("additionalParams")) {
                 Map<String, Object> additionalParams = new HashMap<>();
                 String paramsStr = fields.get("additionalParams");
@@ -144,7 +160,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
         } catch (Exception e) {
             log.error("Failed to deserialize OAuth2 request: {}", e.getMessage());
-            return null; // Forces a fresh OAuth2 flow
+            return null;
         }
     }
 
