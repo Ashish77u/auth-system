@@ -11,15 +11,16 @@ import org.springframework.security.jackson2.SecurityJackson2Modules;
 @Configuration
 public class JacksonConfig {
 
-    @Bean
-    public ObjectMapper objectMapper() {
+    // This bean is ONLY for OAuth2 cookie serialization
+    // We give it a specific name so Spring does NOT use it
+    // as the default ObjectMapper for REST requests
+    @Bean(name = "oauth2ObjectMapper")
+    public ObjectMapper oauth2ObjectMapper() {
         ObjectMapper mapper = JsonMapper.builder()
                 .addModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 .build();
 
-        // Registers Spring Security's Jackson modules
-        // This is what allows OAuth2AuthorizationRequest to be serialized/deserialized
         mapper.registerModules(
                 SecurityJackson2Modules.getModules(
                         JacksonConfig.class.getClassLoader()

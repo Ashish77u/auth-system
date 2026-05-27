@@ -4,8 +4,8 @@ package com.codelab.backend.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
@@ -15,7 +15,6 @@ import org.springframework.util.StringUtils;
 import java.util.Base64;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class HttpCookieOAuth2AuthorizationRequestRepository
         implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
@@ -27,8 +26,16 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
     @Value("${application.oauth2.cookie-expire-seconds}")
     private int cookieExpireSeconds;
 
+    // @Qualifier injects specifically our oauth2ObjectMapper
+    // NOT Spring's default REST ObjectMapper
+    public HttpCookieOAuth2AuthorizationRequestRepository(
+            @Qualifier("oauth2ObjectMapper") ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
     @Override
-    public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
+    public OAuth2AuthorizationRequest loadAuthorizationRequest(
+            HttpServletRequest request) {
         return CookieUtils.getCookie(request, OAUTH2_AUTHORIZATION_REQUEST_COOKIE)
                 .map(cookie -> deserialize(cookie.getValue()))
                 .orElse(null);
@@ -58,14 +65,11 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
     public OAuth2AuthorizationRequest removeAuthorizationRequest(
             HttpServletRequest request,
             HttpServletResponse response) {
-
         OAuth2AuthorizationRequest authRequest = loadAuthorizationRequest(request);
         CookieUtils.deleteCookie(request, response,
                 OAUTH2_AUTHORIZATION_REQUEST_COOKIE);
         return authRequest;
     }
-
-    // ── Serialize using Jackson (JSON) instead of Java serialization ──
 
     private String serialize(OAuth2AuthorizationRequest request) {
         try {
@@ -86,10 +90,11 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
         } catch (Exception e) {
             log.error("Failed to deserialize OAuth2AuthorizationRequest: {}",
                     e.getMessage());
-            return null;   // returning null forces a fresh OAuth2 flow
+            return null;
         }
     }
 }
+
 
 //import jakarta.servlet.http.HttpServletRequest;
 //import jakarta.servlet.http.HttpServletResponse;
