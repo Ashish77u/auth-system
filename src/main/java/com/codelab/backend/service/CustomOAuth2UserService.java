@@ -4,6 +4,7 @@ package com.codelab.backend.service;
 import com.codelab.backend.entity.User;
 import com.codelab.backend.enums.Role;
 import com.codelab.backend.repository.UserRepository;
+import jakarta.persistence.Tuple;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -18,6 +19,12 @@ import org.springframework.stereotype.Service;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
+
+    // In OAuth2UserInfo.java — update getEmail()
+    public String getEmail() {
+        String email = (String) attributes.get("email");
+        return email != null ? email.trim().toLowerCase() : null;
+    }
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {

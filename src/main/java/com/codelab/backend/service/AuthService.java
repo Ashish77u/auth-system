@@ -25,18 +25,27 @@ public class AuthService {
     private final VerificationTokenService verificationTokenService;  // ← new
     private final EmailService emailService;                          // ← new
 
+    // Add this private method to handel Lowercase email normalization + input sanitization
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase();
+    }
+
     public AuthResponse register(RegisterRequest request) {
 
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String email = normalizeEmail(request.getEmail());      // ← add
+        String username = request.getUsername().trim();          // ← add
+
+
+        if (userRepository.existsByEmail(email)) {
             throw new RuntimeException("Email already registered");
         }
-        if (userRepository.existsByUsername(request.getUsername())) {
+        if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("Username already taken");
         }
 
         User user = User.builder()
                 .username(request.getUsername())
-                .email(request.getEmail())
+                .email(email)                                    // ← use normalized
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
                 .enabled(false)
@@ -66,15 +75,18 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
 
+        String email = normalizeEmail(request.getEmail());      // ← add
+
+
         // Throws BadCredentialsException or DisabledException if anything fails
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
+                        email,                                 // <- use normalized
                         request.getPassword()
                 )
         );
 
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(email)           // <- normalized
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = jwtService.generateToken(user);
