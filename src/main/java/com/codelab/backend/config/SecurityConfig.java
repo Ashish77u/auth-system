@@ -30,6 +30,9 @@ public class SecurityConfig {
     private final OAuth2AuthenticationFailureHandler oAuth2FailureHandler;
     private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthRequestRepository;
 
+    private final RateLimitingFilter rateLimitingFilter;    // <- add
+
+
 
     private static final String[] PUBLIC_URLS = {
             "/api/auth/**",
@@ -51,6 +54,11 @@ public class SecurityConfig {
                 )
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+        // -- Add RateLimitFilter
+                .addFilterBefore(rateLimitingFilter,
+                        org.springframework.security.web.authentication
+                                .UsernamePasswordAuthenticationFilter.class)
 
         // ── OAuth2 config ──────────────────────────────────────────
             .oauth2Login(oauth2 -> oauth2
