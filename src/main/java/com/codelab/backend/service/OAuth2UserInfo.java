@@ -18,9 +18,10 @@ public class OAuth2UserInfo {
     public String getName() {
         return (String) attributes.get("name");
     }
-
+    
     public String getEmail() {
-        return (String) attributes.get("email");
+        String email = (String) attributes.get("email");
+        return email != null ? email.trim().toLowerCase() : null;
     }
 
     public String getImageUrl() {

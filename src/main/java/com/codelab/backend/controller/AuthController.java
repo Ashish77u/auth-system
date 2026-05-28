@@ -1,17 +1,22 @@
 package com.codelab.backend.controller;
 
 import com.codelab.backend.dto.*;
+import com.codelab.backend.entity.PasswordResetToken;
 import com.codelab.backend.entity.RefreshToken;
 import com.codelab.backend.entity.User;
 import com.codelab.backend.entity.VerificationToken;
+import com.codelab.backend.repository.PasswordResetTokenRepository;
 import com.codelab.backend.repository.UserRepository;
 import com.codelab.backend.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -25,6 +30,9 @@ public class AuthController {
 
     private final RefreshTokenService refreshTokenService;
     private final JwtService jwtService;
+
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordEncoder passwordEncoder;
 
 
     @PostMapping("/register")
@@ -121,5 +129,64 @@ public class AuthController {
         refreshTokenService.deleteByUser(refreshToken.getUser());
 
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+
+        String email = request.getEmail().trim().toLowerCase();
+
+        // Always return success — never reveal if email exists
+        userRepository.findByEmail(email).ifPresent(user -> {
+            // Only local accounts can reset password
+            if ("local".equals(user.getProvider())) {
+                passwordResetTokenRepository.deleteByUserId(user.getId());
+
+                PasswordResetToken resetToken = PasswordResetToken.builder()
+                        .token(UUID.randomUUID().toString())
+                        .user(user)
+                        .expiresAt(LocalDateTime.now().plusHours(1))
+                        .build();
+
+                passwordResetTokenRepository.save(resetToken);
+                emailService.sendPasswordResetEmail(
+                        user.getEmail(),
+                        user.getUsername(),
+                        resetToken.getToken()
+                );
+            }
+        });
+
+        return ResponseEntity.ok(Map.of(
+                "message", "If that email exists, a reset link has been sent."
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+
+        PasswordResetToken resetToken = passwordResetTokenRepository
+                .findByToken(request.getToken())
+                .orElseThrow(() -> new RuntimeException("Invalid or expired reset token"));
+
+        if (resetToken.isExpired()) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new RuntimeException("Reset link has expired. Please request a new one.");
+        }
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        passwordResetTokenRepository.delete(resetToken);
+
+        // Invalidate all refresh tokens so old sessions are killed
+        refreshTokenService.deleteByUser(user);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Password reset successfully. You can now log in."
+        ));
     }
 }

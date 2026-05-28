@@ -101,4 +101,74 @@ public class EmailService {
                 </html>
                 """.formatted(username, verifyLink, verifyLink);
     }
+
+    @Async
+    public void sendPasswordResetEmail(String toEmail,
+                                       String username,
+                                       String token) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("Reset your CodeLab password");
+            helper.setText(buildPasswordResetEmailBody(username, token), true);
+
+            mailSender.send(message);
+            log.info("Password reset email sent to: {}", toEmail);
+        } catch (MessagingException e) {
+            log.error("Failed to send reset email to {}: {}", toEmail, e.getMessage());
+        }
+    }
+
+    private String buildPasswordResetEmailBody(String username, String token) {
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
+
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; background: #f4f4f4; }
+                    .container { max-width: 600px; margin: 40px auto;
+                                 background: #fff; border-radius: 8px;
+                                 overflow: hidden;
+                                 box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+                    .header { background: #4f46e5; padding: 32px;
+                              text-align: center; }
+                    .header h1 { color: #fff; margin: 0; font-size: 24px; }
+                    .body { padding: 32px; color: #374151; }
+                    .body p { line-height: 1.6; margin: 0 0 16px; }
+                    .btn { display: inline-block; background: #4f46e5;
+                           color: #fff; text-decoration: none;
+                           padding: 14px 32px; border-radius: 6px;
+                           font-weight: bold; }
+                    .footer { background: #f9fafb; padding: 20px 32px;
+                              text-align: center; color: #9ca3af;
+                              font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>Password Reset</h1></div>
+                    <div class="body">
+                        <p>Hi <strong>%s</strong>,</p>
+                        <p>We received a request to reset your password.
+                           Click below — this link expires in
+                           <strong>1 hour</strong>.</p>
+                        <p style="text-align:center; margin: 32px 0;">
+                            <a href="%s" class="btn">Reset Password</a>
+                        </p>
+                        <p style="font-size:13px; color:#9ca3af;">
+                            If you didn't request this, ignore this email.
+                            Your password won't change.
+                        </p>
+                    </div>
+                    <div class="footer">&copy; 2025 CodeLab</div>
+                </div>
+            </body>
+            </html>
+            """.formatted(username, resetLink);
+    }
 }
