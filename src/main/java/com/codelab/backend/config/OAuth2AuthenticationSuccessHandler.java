@@ -1,7 +1,9 @@
 package com.codelab.backend.config;
 
+import com.codelab.backend.entity.RefreshToken;
 import com.codelab.backend.entity.User;
 import com.codelab.backend.service.JwtService;
+import com.codelab.backend.service.RefreshTokenService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,6 +26,9 @@ public class OAuth2AuthenticationSuccessHandler
     private final JwtService jwtService;
     private final HttpCookieOAuth2AuthorizationRequestRepository authRequestRepository;
 
+    private final RefreshTokenService refreshTokenService;                  // <- add
+
+
     @Value("${application.oauth2.authorized-redirect-uri}")
     private String authorizedRedirectUri;
 
@@ -38,6 +43,8 @@ public class OAuth2AuthenticationSuccessHandler
 
         // 2. Generate JWT
         String token = jwtService.generateToken(user);
+        RefreshToken refresh = refreshTokenService.createRefreshToken(user); // ← new
+
 
         log.info("OAuth2 login successful for: {}", user.getEmail());
 
@@ -49,6 +56,7 @@ public class OAuth2AuthenticationSuccessHandler
         String redirectUrl = UriComponentsBuilder
                 .fromUriString(authorizedRedirectUri)
                 .queryParam("token", token)
+                .queryParam("refreshToken", refresh.getToken())               // ← new
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);

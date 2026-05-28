@@ -3,6 +3,7 @@ package com.codelab.backend.service;
 import com.codelab.backend.dto.AuthResponse;
 import com.codelab.backend.dto.LoginRequest;
 import com.codelab.backend.dto.RegisterRequest;
+import com.codelab.backend.entity.RefreshToken;
 import com.codelab.backend.entity.User;
 import com.codelab.backend.entity.VerificationToken;
 import com.codelab.backend.enums.Role;
@@ -22,8 +23,11 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final VerificationTokenService verificationTokenService;  // ← new
-    private final EmailService emailService;                          // ← new
+    private final VerificationTokenService verificationTokenService;  // <- new
+    private final EmailService emailService;                          // <- new
+
+    private final RefreshTokenService refreshTokenService;            // <- new
+
 
     // Add this private method to handel Lowercase email normalization + input sanitization
     private String normalizeEmail(String email) {
@@ -90,9 +94,12 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = jwtService.generateToken(user);
+        RefreshToken refresh = refreshTokenService.createRefreshToken(user); // ← new
+
 
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refresh.getToken())               // <- new
                 .email(user.getEmail())
                 .username(user.getUsername())
                 .role(user.getRole().name())

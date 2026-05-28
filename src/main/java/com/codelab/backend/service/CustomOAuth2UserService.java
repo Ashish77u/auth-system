@@ -20,11 +20,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
 
-    // In OAuth2UserInfo.java — update getEmail()
-    public String getEmail() {
-        String email = (String) attributes.get("email");
-        return email != null ? email.trim().toLowerCase() : null;
-    }
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {

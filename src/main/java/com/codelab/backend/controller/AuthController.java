@@ -1,15 +1,11 @@
 package com.codelab.backend.controller;
 
-import com.codelab.backend.dto.AuthResponse;
-import com.codelab.backend.dto.LoginRequest;
-import com.codelab.backend.dto.RegisterRequest;
-import com.codelab.backend.dto.ResendVerificationRequest;
+import com.codelab.backend.dto.*;
+import com.codelab.backend.entity.RefreshToken;
 import com.codelab.backend.entity.User;
 import com.codelab.backend.entity.VerificationToken;
 import com.codelab.backend.repository.UserRepository;
-import com.codelab.backend.service.AuthService;
-import com.codelab.backend.service.EmailService;
-import com.codelab.backend.service.VerificationTokenService;
+import com.codelab.backend.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +22,9 @@ public class AuthController {
     private final VerificationTokenService verificationTokenService;  // ← new
     private final EmailService emailService;                          // ← new
     private final UserRepository userRepository;                      // ← new
+
+    private final RefreshTokenService refreshTokenService;
+    private final JwtService jwtService;
 
 
     @PostMapping("/register")
@@ -83,5 +82,44 @@ public class AuthController {
         return ResponseEntity.ok(Map.of(
                 "message", "Verification email sent. Please check your inbox."
         ));
+    }
+
+    // inject RefreshTokenService, JwtService, UserRepository at top of AuthController
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(
+            @Valid @RequestBody RefreshTokenRequest request) {
+
+        RefreshToken refreshToken = refreshTokenService.findByToken(
+                request.getRefreshToken());
+
+        if (refreshToken.isExpired()) {
+            refreshTokenService.deleteByUser(refreshToken.getUser());
+            throw new RuntimeException("Refresh token expired. Please log in again.");
+        }
+
+        User user = refreshToken.getUser();
+        String newAccessToken = jwtService.generateToken(user);
+
+        return ResponseEntity.ok(AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(refreshToken.getToken()) // same refresh token
+                .email(user.getEmail())
+                .username(user.getUsername())
+                .role(user.getRole().name())
+                .emailVerified(user.isEnabled())
+                .message("Token refreshed")
+                .build());
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(
+            @Valid @RequestBody RefreshTokenRequest request) {
+
+        RefreshToken refreshToken = refreshTokenService.findByToken(
+                request.getRefreshToken());
+        refreshTokenService.deleteByUser(refreshToken.getUser());
+
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 }

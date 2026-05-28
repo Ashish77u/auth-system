@@ -17,4 +17,7 @@ public class AuthResponse {
     private String role;
     private boolean emailVerified;
     private String message;
+
+    private String refreshToken;   // ← add this field
+
 }
