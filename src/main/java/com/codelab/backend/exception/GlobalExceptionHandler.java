@@ -16,10 +16,16 @@ public class GlobalExceptionHandler {
 
     // Handles @Valid failures (blank email, short password, etc.)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
+    public ResponseEntity<Map<String, String>> handleValidationErrors(
+            MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors()
-                .forEach(err -> errors.put(err.getField(), err.getDefaultMessage()));
+                .forEach(err -> {
+                    errors.put(err.getField(), err.getDefaultMessage());
+                    System.out.println("Validation error — field: "
+                            + err.getField() + ", message: "
+                            + err.getDefaultMessage()); // ← temp debug line
+                });
         return ResponseEntity.badRequest().body(errors);
     }
 

@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: ${PORT}
 
 spring:
   main:
@@ -9,9 +9,9 @@ spring:
   name : backend
   
   datasource:
-    url: jdbc:mysql://localhost:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: '@shish_407'   # ← change this
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}   # ← change this
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
@@ -26,8 +26,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: lucicore0001@gmail.com       # ← change this
-    password: mfegrltvdiymdbei    # ← NOT your login password, see note below
+    username: ${MAIL_USERNAME}       # ← change this
+    password: ${MAIL_PASSWORD}    # ← NOT your login password, see note below
     properties:
       mail:
         smtp:
@@ -43,10 +43,8 @@ spring:
       client:
         registration:
           google:
-#            client-id: 621219264901-b5d2nmm2vv0esjg1p98ep4upl8eal6j7.apps.googleusercontent.com         # ← Phase 4 will fill this
-            client-id: ${OAUTH_CLIENT_ID}         # ← Phase 4 will fill this
-            client-secret: ${OAUTH_CLIENT_SECRET}  # ← Phase 4 will fill this
-#            client-secret: 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  # ← Phase 4 will fill this
+            client-id: ${GOOGLE_CLIENT_ID}         # ← Phase 4 will fill this
+            client-secret: ${GOOGLE_CLIENT_SECRET}  # ← Phase 4 will fill this
             scope:
               - email
               - profile
@@ -54,9 +52,9 @@ spring:
 
 application:
   jwt:
-    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970   # 256-bit hex key
-    expiration: 86400000    # 24 hours in milliseconds
-  frontend-url: http://localhost:5173
+    secret: ${JWT_SECRET}   # 256-bit hex key
+    expiration: ${JWT_EXPIRATION}    # 24 hours in milliseconds
+  frontend-url: ${FRONTEND_URL}
   oauth2:
     authorized-redirect-uri: http://localhost:5173/oauth2/callback
     cookie-expire-seconds: 180
